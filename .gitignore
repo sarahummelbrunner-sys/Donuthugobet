@@ -1,0 +1,5 @@
+video/build/
+*.onnx
+*.onnx.json
+voice.tgz
+__pycache__/
