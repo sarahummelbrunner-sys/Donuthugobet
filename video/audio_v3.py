@@ -6,8 +6,10 @@ from scipy import signal
 from synth import SR, add, filt, sos, env_exp, T, kick, clap, hat, impact, whoosh, riser, tick
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+import importlib
+_TL = importlib.import_module(os.environ.get("TIMELINE", "timeline_v3"))
+EV, DUR = _TL.EV, _TL.DUR
 BUILD = os.environ.get("BUILD_DIR", os.path.join(HERE, "build_v3"))
-from timeline_v3 import EV, DUR
 
 N = int(DUR * SR)
 rng = np.random.default_rng(3)
@@ -119,9 +121,9 @@ def main():
             arp = [voicing[0] + 12, voicing[2] + 12, voicing[1] + 12, voicing[3] + 12, voicing[2] + 12, voicing[0] + 12, voicing[3], voicing[1] + 12]
             for s, m in enumerate(arp):
                 ts = tb + s * B / 2
-                g = 0.22 if (EV["beat"] <= ts < EV["outro"]) else 0.13
+                g = 0.22 if (EV["beat"] <= ts < EV["outro"] or ts >= EV.get("drums2", 1e9)) else 0.13
                 add(plk, pluck_c(m), ts, g, pan=0.35 if s % 2 else -0.35)
-            if EV["beat"] <= tb < EV["outro"]:
+            if EV["beat"] <= tb < EV["outro"] or tb >= EV.get("drums2", 1e9) - 0.05:
                 for s in range(4):
                     add(bs, bass(midi(root), B * 0.9), tb + s * B, 0.9)
                 for s in (0, 2):
@@ -139,7 +141,7 @@ def main():
     while tb < DUR:
         for s in (0, 2):
             ts = tb + s * B
-            if EV["beat"] <= ts < EV["outro"]:
+            if EV["beat"] <= ts < EV["outro"] or ts >= EV.get("drums2", 1e9) - 0.05:
                 i = int(ts * SR); n = int(0.28 * SR)
                 if 0 <= i < N:
                     seg = 1 - 0.55 * np.exp(-np.arange(min(n, N - i)) / (0.07 * SR))
@@ -175,6 +177,9 @@ def main():
     add(sfx, riser(EV["logo"] - EV["outro"]), EV["outro"], 0.18)
     add(sfx, impact(), EV["logo"], 0.4)
     add(sfx, chime([659.3, 987.8, 1318.5, 1975.5], 3.0), EV["logo"], 0.35)
+    if "cta" in EV:
+        add(sfx, whoosh(0.45), EV["cta"] - 0.2, 0.25)
+        add(sfx, chime([1318.5, 1760, 2637], 1.6), EV["cta"] + 0.1, 0.3)
 
     mix = reverb(music * 0.9 + sfx * 0.8, 2.6, 0.28)
     fo = int(2.0 * SR); mix[:, N - fo:] *= np.linspace(1, 0, fo) ** 1.5

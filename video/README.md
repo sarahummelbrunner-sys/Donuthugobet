@@ -30,7 +30,17 @@ python3 audio_v2.py
 python3 make_video_v2.py build_v2/donuthugobet_v2.mp4      # SUBFRAMES=1 for a fast draft
 ```
 
-## v3 – product-ad cut (current)
+## v4 – server branding (current)
+
+Same product-ad style as v3, re-branded with the server logo (`assets/server_logo.png`, blue/red),
+logo end card and "JOIN DC IN BIO" call to action.
+
+```bash
+TIMELINE=timeline_v4 BUILD_DIR=build_v4 python3 audio_v3.py
+python3 make_video_v4.py build_v4/donuthugobet_v4.mp4
+```
+
+## v3 – product-ad cut
 
 Apple/Shopify-style: black background with one brand glow, 3D phone (lockscreen -> app),
 floating UI cards with rack focus, live bets panel, instant withdrawal, wordmark end card.
