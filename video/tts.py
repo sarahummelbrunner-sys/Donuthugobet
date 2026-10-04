@@ -7,7 +7,7 @@ VOICE = sys.argv[1]           # path to .onnx voice
 OUT_WAV, OUT_JSON = sys.argv[2], sys.argv[3]
 
 # Each line: list of (caption_text, spoken_text). Pause (s) after the line.
-SCRIPT = [
+SCRIPT_V1 = [
     ([("if", "If"), ("you're", "you're"), ("still", "still"), ("grinding", "grinding"),
       ("money", "money"), ("on", "on"), ("DonutSMP", "Donut S M P"), ("like", "like"), ("this", "this")], 0.10),
     ([("you", "you"), ("are", "are"), ("WRONG", "WRONG!")], 0.35),
@@ -22,9 +22,25 @@ SCRIPT = [
       ("DONUTHUGOBET.NET", "donut hugo bet dot net!")], 0.0),
 ]
 
+# v2: cleaner, ad-style read for the motion-design cut
+SCRIPT_V2 = [
+    ([("still", "Still"), ("grinding", "grinding"), ("money", "money"), ("on", "on"), ("DonutSMP", "Donut S M P?")], 0.40),
+    ([("there's", "There's"), ("a", "a"), ("smarter", "smarter"), ("way", "way.")], 0.45),
+    ([("meet", "Meet"), ("DONUTHUGOBET.NET", "donut hugo bet dot net.")], 0.55),
+    ([("gamble", "Gamble"), ("with", "with"), ("your", "your"), ("DONUT", "Donut"), ("money", "money,")], 0.12),
+    ([("or", "or"), ("your", "your"), ("HUGO", "Hugo"), ("money", "money.")], 0.45),
+    ([("flip", "Flip"), ("a", "a"), ("coin", "coin.")], 0.18),
+    ([("ride", "Ride"), ("the", "the"), ("multiplier", "multiplier.")], 0.40),
+    ([("instant", "Instant"), ("deposits", "deposits.")], 0.12),
+    ([("instant", "Instant"), ("withdrawals", "withdrawals.")], 0.45),
+    ([("play", "Play"), ("now", "now"), ("at", "at"), ("DONUTHUGOBET.NET", "donut hugo bet dot net.")], 0.0),
+]
+import os
+SCRIPT, LS = (SCRIPT_V2, 0.92) if os.environ.get("SCRIPT") == "v2" else (SCRIPT_V1, 0.86)
+
 voice = PiperVoice.load(VOICE, include_alignments=True)
 sr = voice.config.sample_rate
-cfg = SynthesisConfig(length_scale=0.86, noise_scale=0.6, noise_w_scale=0.7)
+cfg = SynthesisConfig(length_scale=LS, noise_scale=0.6, noise_w_scale=0.7)
 
 lead = 0.45  # silence before first word
 audio = [np.zeros(int(lead * sr), np.float32)]

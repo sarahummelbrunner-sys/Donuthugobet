@@ -1,4 +1,5 @@
 video/build/
+video/build_v2/
 *.onnx
 *.onnx.json
 voice.tgz
