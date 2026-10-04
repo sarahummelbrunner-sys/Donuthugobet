@@ -30,6 +30,19 @@ python3 audio_v2.py
 python3 make_video_v2.py build_v2/donuthugobet_v2.mp4      # SUBFRAMES=1 for a fast draft
 ```
 
+## v3 – product-ad cut (current)
+
+Apple/Shopify-style: black background with one brand glow, 3D phone (lockscreen -> app),
+floating UI cards with rack focus, live bets panel, instant withdrawal, wordmark end card.
+No voiceover – music + UI sound design only.
+
+```bash
+python3 audio_v3.py
+python3 make_video_v3.py build_v3/donuthugobet_v3.mp4
+```
+
+Drop the real logo at `video/assets/logo.png` (transparent PNG) and it replaces the text wordmark.
+
 ## Files
 
 - `tts.py` – script/voiceover text (edit `SCRIPT` to change what is said; captions follow automatically)
