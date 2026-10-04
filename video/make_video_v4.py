@@ -18,9 +18,13 @@ FONTS = os.path.join(HERE, "fonts")
 BUILD = os.environ.get("BUILD_DIR", os.path.join(HERE, "build_v4"))
 LOGO_PATH = os.path.join(HERE, "assets", "server_logo.png")
 
-BLUE = (52, 120, 255)
-RED = (240, 48, 58)
-BLUE_L = (140, 180, 255)
+def _hex(v): v = v.lstrip("#"); return tuple(int(v[i:i + 2], 16) for i in (0, 2, 4))
+# Brand colours: override with the website's exact values, e.g. BRAND_PRIMARY=#2f6bff BRAND_SECONDARY=#ff2a3d
+BLUE = _hex(os.environ.get("BRAND_PRIMARY", "#3478ff"))      # Donut money
+RED = _hex(os.environ.get("BRAND_SECONDARY", "#f0303a"))     # Hugo money
+def tint(c, k): return tuple(min(255, int(v + (255 - v) * k)) for v in c)     # towards white
+def shade(c, k): return tuple(int(v * (1 - k)) for v in c)                     # towards black
+BLUE_L = tint(BLUE, 0.45)
 GREEN = (48, 209, 88)
 TXT = (245, 245, 247)
 SUBT = (150, 150, 160)
@@ -208,11 +212,23 @@ def wordmark(size):
 
 @lru_cache(None)
 def badge(kind, d):
-    if kind == "donut":
-        im = circle(d, BLUE + (255,)).copy(); col = (255, 255, 255)
-    else:
-        im = circle(d, RED + (255,)).copy(); col = (255, 255, 255)
-    t = text("D" if kind == "donut" else "H", int(d * 0.52), col, "ExtraBold")
+    """Casino chip in the style of the server logo: striped rim, inner ring, letter."""
+    col = BLUE if kind == "donut" else RED
+    dark = tuple(int(c * 0.55) for c in col)
+    S = d * 4
+    im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    dr = ImageDraw.Draw(im)
+    dr.ellipse([0, 0, S - 1, S - 1], fill=dark + (255,))
+    dr.ellipse([S * 0.03, S * 0.03, S * 0.97, S * 0.97], fill=col + (255,))
+    for i in range(8):                                   # white rim stripes
+        a0 = i * 45 - 9
+        dr.pieslice([S * 0.03, S * 0.03, S * 0.97, S * 0.97], a0, a0 + 18, fill=(245, 248, 255, 255))
+    dr.ellipse([S * 0.17, S * 0.17, S * 0.83, S * 0.83], fill=dark + (255,))
+    dr.ellipse([S * 0.19, S * 0.19, S * 0.81, S * 0.81], fill=(245, 248, 255, 255))
+    dr.ellipse([S * 0.22, S * 0.22, S * 0.78, S * 0.78], fill=col + (255,))
+    dr.arc([S * 0.26, S * 0.26, S * 0.74, S * 0.74], 200, 290, fill=(255, 255, 255, 120), width=int(S * 0.03))
+    im = im.resize((d, d), Image.LANCZOS)
+    t = text("D" if kind == "donut" else "H", int(d * 0.36), (255, 255, 255), "ExtraBold")
     im.alpha_composite(t, (d // 2 - t.width // 2, d // 2 - t.height // 2))
     return im
 
@@ -240,8 +256,11 @@ def status_bar(sc, col=TXT):
 @lru_cache(None)
 def lock_bg():
     sc = Image.new("RGBA", (SW, SH), (6, 5, 10, 255))
-    g = glow_bg_small(SW, SH, [((25, 60, 170), SW * 0.3, SH * 0.85, SW * 0.7, 1.0), ((140, 20, 35), SW * 0.9, SH * 1.0, SW * 0.5, 0.8)])
+    g = glow_bg_small(SW, SH, [(tuple(int(c * 0.5) for c in BLUE), SW * 0.3, SH * 0.85, SW * 0.7, 1.0),
+                               (tuple(int(c * 0.5) for c in RED), SW * 0.9, SH * 1.0, SW * 0.5, 0.8)])
     sc.alpha_composite(g)
+    lg = server_logo(430)
+    comp(sc, blurred(lg, 3), SW / 2 - lg.width / 2 - 8, 760 - lg.height / 2 - 8, alpha=0.55)
     return sc
 
 def glow_bg_small(w, h, glows):
@@ -300,10 +319,10 @@ def screen_app(u):
         d.text((sx + sw_ / 4 + i * sw_ / 2, sy + sh_ / 2), lab, font=F(26, "SemiBold"), fill=col + (255,), anchor="mm")
     # balance card
     cy0 = 296
-    ca = grad_rrect(SW - 60, 270, 40, (70, 140, 255), (22, 60, 190))
-    cb = grad_rrect(SW - 60, 270, 40, (255, 90, 90), (185, 22, 38))
+    ca = grad_rrect(SW - 60, 270, 40, tint(BLUE, 0.12), shade(BLUE, 0.3))
+    cb = grad_rrect(SW - 60, 270, 40, tint(RED, 0.15), shade(RED, 0.25))
     comp(sc, ca, 30, cy0, 1 - k); comp(sc, cb, 30, cy0, k)
-    lab_col = lerpc((220, 232, 255), (255, 225, 225), k)
+    lab_col = lerpc(tint(BLUE, 0.85), tint(RED, 0.85), k)
     num_col = (255, 255, 255)
     d.text((64, cy0 + 50), "Balance", font=F(26, "Medium"), fill=lab_col + (255,), anchor="lm")
     v = lerp(2_500_000, 1_840_000, k)
@@ -315,7 +334,7 @@ def screen_app(u):
         b = rrect(190, 58, 29, (255, 255, 255, 240))
         sc.alpha_composite(b, (64 + i * 206, cy0 + 196))
         d.text((64 + i * 206 + 95, cy0 + 225), lab, font=F(24, "SemiBold"),
-               fill=(lerpc((22, 60, 190), (185, 22, 38), k)) + (255,), anchor="mm")
+               fill=(lerpc(shade(BLUE, 0.3), shade(RED, 0.25), k)) + (255,), anchor="mm")
     # games
     d.text((36, 625), "Games", font=F(34, "Bold"), fill=TXT + (255,), anchor="lm")
     for i, (name, sub) in enumerate((("Coinflip", "x2 payout"), ("Crash", "up to 1000x"))):
@@ -479,7 +498,7 @@ def card_crash(u):
 
 @lru_cache(None)
 def _cashed():
-    b = rrect(360, 72, 36, (16, 38, 92, 255), BLUE + (255,), 2).copy()
+    b = rrect(360, 72, 36, shade(BLUE, 0.65) + (255,), BLUE + (255,), 2).copy()
     ImageDraw.Draw(b).text((180, 36), "Cashed out at 4.20x", font=F(27, "SemiBold"), fill=BLUE_L + (255,), anchor="mm")
     return b
 
@@ -549,7 +568,7 @@ def card_wallet(u):
     d.text((84, 283), "5,000,000", font=F(60, "Bold"), fill=TXT + (255,), anchor="lm")
     im.alpha_composite(rrect(250, 64, 32, RED + (40,), RED + (255,), 2), (w - 48 - 36 - 250, 223))
     im.alpha_composite(badge("hugo", 40), (w - 48 - 36 - 250 + 14, 235))
-    d.text((w - 48 - 36 - 250 + 64, 255), "Hugo money", font=F(24, "SemiBold"), fill=(255, 140, 140, 255), anchor="lm")
+    d.text((w - 48 - 36 - 250 + 64, 255), "Hugo money", font=F(24, "SemiBold"), fill=tint(RED, 0.45) + (255,), anchor="lm")
     # button
     press = 1 - 0.05 * math.sin(math.pi * prog(u, 0.85, 0.2))
     bw, bh = int((w - 96) * press), int(110 * press)
